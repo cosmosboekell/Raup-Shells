@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raup's Morphospace — The Shells That Were Never Born</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ---- Design tokens ---- */
+    :root {
+      --bg:          #110d07;
+      --panel:       #1c1509;
+      --border:      #3a2c18;
+      --text:        #ede0c4;
+      --text-dim:    #96866a;
+      --gold:        #c5963a;
+      --gold-dim:    #7a5d22;
+      --gold-glow:   rgba(197,150,58,0.25);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      min-height: 100vh;
+    }
+
+    /* ---- Header ---- */
+    header {
+      text-align: center;
+      padding: 2.2rem 1rem 1.4rem;
+      background: linear-gradient(to bottom, #1e1408, var(--bg));
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: clamp(1.7rem, 4vw, 2.9rem);
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      text-shadow: 0 0 40px var(--gold-glow);
+      margin-bottom: 0.4rem;
+    }
+    header .subtitle {
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+    }
+
+    /* ---- Main two-column layout ---- */
+    .main {
+      display: flex;
+      gap: 0;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 2.2rem 1.5rem;
+      align-items: flex-start;
+    }
+
+    /* ---- Canvas column ---- */
+    .canvas-col {
+      flex: 1.15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .canvas-frame {
+      background: #07050300;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 50px rgba(197,150,58,0.07), inset 0 0 30px rgba(0,0,0,0.6);
+      padding: 6px;
+    }
+    #shellCanvas { display: block; }
+    .canvas-label {
+      margin-top: 0.65rem;
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+    }
+
+    /* ---- Controls column ---- */
+    .controls-col {
+      flex: 1;
+      padding-left: 2.5rem;
+      max-width: 330px;
+    }
+    .section-label {
+      font-family: 'IM Fell English', serif;
+      color: var(--gold);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 1.1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ---- Sliders ---- */
+    .param { margin-bottom: 1.9rem; }
+    .param-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.25rem;
+    }
+    .param-symbol {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      color: var(--gold);
+      font-size: 1.35rem;
+      margin-right: 0.3rem;
+    }
+    .param-name {
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    .param-value {
+      font-size: 1.0rem;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+      min-width: 3.5ch;
+      text-align: right;
+    }
+    .param-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-style: italic;
+      line-height: 1.5;
+      margin-bottom: 0.55rem;
+    }
+    input[type=range] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 2px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px rgba(197,150,58,0.7);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.4); }
+    input[type=range]::-moz-range-thumb {
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ---- Organism badge ---- */
+    .badge {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 0.7rem 1rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 1.6rem;
+      min-height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.15rem;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .badge.found {
+      border-color: var(--gold-dim);
+      background: rgba(197,150,58,0.04);
+    }
+    .badge.void {
+      border-color: #2a1f10;
+      border-style: dashed;
+    }
+    .badge .org-name {
+      color: var(--gold);
+      font-size: 0.95rem;
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    /* ---- Preset buttons ---- */
+    .presets { margin-bottom: 0; }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+    .preset-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 0.55rem 0.5rem;
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: all 0.18s;
+    }
+    .preset-btn:hover {
+      border-color: var(--gold-dim);
+      color: var(--text);
+      background: rgba(197,150,58,0.06);
+    }
+    .preset-btn.void-btn {
+      grid-column: 1 / -1;
+      font-style: italic;
+      border-style: dashed;
+      border-color: var(--gold-dim);
+      color: var(--text-dim);
+    }
+    .preset-btn.void-btn:hover {
+      color: var(--gold);
+      border-color: var(--gold);
+      background: rgba(197,150,58,0.09);
+    }
+
+    /* ---- Bottom row: morphospace + reflection ---- */
+    .bottom-row {
+      max-width: 1080px;
+      margin: 0.2rem auto 0;
+      padding: 0 1.5rem 2.5rem;
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+    .map-col { display: flex; flex-direction: column; align-items: center; }
+    .map-title {
+      font-family: 'IM Fell English', serif;
+      color: var(--gold);
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    #morphoMap {
+      display: block;
+      border: 1px solid var(--border);
+    }
+    .map-note {
+      margin-top: 0.4rem;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-style: italic;
+      text-align: center;
+      max-width: 260px;
+    }
+
+    /* ---- Reflection card ---- */
+    .reflection {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 1.5rem 1.6rem;
+      font-size: 0.87rem;
+      line-height: 1.85;
+      color: var(--text-dim);
+    }
+    .reflection .hook {
+      font-style: italic;
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.65;
+      padding-left: 0.9rem;
+      border-left: 2px solid var(--gold-dim);
+      margin-bottom: 1rem;
+    }
+    .reflection p + p { margin-top: 0.7rem; }
+    .reflection strong { color: var(--text); font-weight: 500; }
+
+    /* ---- Footer ---- */
+    footer {
+      text-align: center;
+      padding: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 720px) {
+      .main { flex-direction: column; align-items: center; }
+      .controls-col { padding-left: 0; padding-top: 1.8rem; max-width: 100%; width: 100%; }
+      .bottom-row { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ======================================================= HEADER -->
+<header>
+  <h1>Raup's Morphospace</h1>
+  <p class="subtitle">The Shells That Were Never Born &ensp;·&ensp;
+     After David M. Raup, <em>Journal of Paleontology</em> 40(5), 1966</p>
+</header>
+
+<!-- ======================================================= MAIN -->
+<div class="main">
+
+  <!-- Shell canvas -->
+  <div class="canvas-col">
+    <div class="canvas-frame">
+      <canvas id="shellCanvas" width="460" height="460"></canvas>
+    </div>
+    <p class="canvas-label" id="canvasLabel">planispiral cross-section · 4 whorls</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-col">
+    <p class="section-label">Geometric Parameters</p>
+
+    <!-- W slider -->
+    <div class="param">
+      <div class="param-header">
+        <span><span class="param-symbol">W</span>
+              <span class="param-name">Whorl Expansion Rate</span></span>
+        <span class="param-value" id="wVal">3.00</span>
+      </div>
+      <p class="param-desc">How much each coil grows relative to the last.
+        Low W = tight nautilus; high W = rapidly opening spiral.</p>
+      <input type="range" id="wSlider" min="1.1" max="10" step="0.05" value="3.0">
+    </div>
+
+    <!-- D slider -->
+    <div class="param">
+      <div class="param-header">
+        <span><span class="param-symbol">D</span>
+              <span class="param-name">Umbilical Ratio</span></span>
+        <span class="param-value" id="dVal">0.30</span>
+      </div>
+      <p class="param-desc">Inner edge of the tube as a fraction of the outer radius.
+        D≈0: whorls touch the axis. D≈1: thin hollow tube.</p>
+      <input type="range" id="dSlider" min="0.01" max="0.95" step="0.01" value="0.3">
+    </div>
+
+    <!-- T slider -->
+    <div class="param">
+      <div class="param-header">
+        <span><span class="param-symbol">T</span>
+              <span class="param-name">Translation Rate</span></span>
+        <span class="param-value" id="tVal">0.00</span>
+      </div>
+      <p class="param-desc">Rate of movement along the coiling axis.
+        T=0: flat ammonite disc. T→1: tall gastropod spire (view foreshortened).</p>
+      <input type="range" id="tSlider" min="0" max="1" step="0.01" value="0">
+    </div>
+
+    <p class="section-label">Organism Region</p>
+
+    <!-- Organism badge -->
+    <div class="badge" id="badge">
+      <em>Adjust parameters to identify a taxon</em>
+    </div>
+
+    <!-- Preset buttons -->
+    <div class="presets">
+      <p class="section-label">Jump to a Shell</p>
+      <div class="preset-grid">
+        <button class="preset-btn" onclick="setPreset('ammonite')">☉ Ammonite</button>
+        <button class="preset-btn" onclick="setPreset('gastropod')">⌒ Gastropod</button>
+        <button class="preset-btn" onclick="setPreset('bivalve')">⊙ Bivalve</button>
+        <button class="preset-btn" onclick="setPreset('brachiopod')">◎ Brachiopod</button>
+        <button class="preset-btn void-btn" onclick="setPreset('void')">
+          ⟶ Enter the Void — a shell that never was
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /controls-col -->
+</div><!-- /main -->
+
+<!-- ======================================================= BOTTOM -->
+<div class="bottom-row">
+
+  <!-- Morphospace minimap -->
+  <div class="map-col">
+    <p class="map-title">Morphospace Map (W vs D)</p>
+    <canvas id="morphoMap" width="270" height="215"></canvas>
+    <p class="map-note">Gold dot = your shell. Colored zones = known organisms.
+      Gray = the void.</p>
+  </div>
+
+  <!-- Reflection -->
+  <div class="reflection">
+    <p class="hook">"This artifact shows that the model generates more than nature ever built —
+       which makes evolution's choices visible as <em>choices</em>."</p>
+    <p>In 1966, paleontologist <strong>David M. Raup</strong> used three geometric parameters
+      to describe <strong>every coiled shell that could theoretically exist.</strong>
+      He then mapped where actual species — ammonites, gastropods, bivalves, brachiopods —
+      fall within that space. The striking result: <strong>most of the mathematically
+      possible forms are empty.</strong> No organism has ever built them.</p>
+    <p>This is the digital double working in reverse.
+      Instead of modeling something that exists, the model defines the
+      <em>entire neighborhood of existence</em>, and nature's actual solutions appear
+      as a small, selective cluster within a vast geometric silence.
+      Drag the sliders into the gray region of the morphospace map to visit
+      shells the biosphere never made — geometrically coherent, biologically absent.</p>
+    <p style="margin-top:0.9rem; font-size:0.78rem; color: var(--text-dim); font-style:italic;">
+      ← Use the <em>W</em>, <em>D</em>, <em>T</em> sliders above to explore.
+      Preset buttons load known organism geometries. "Enter the Void" drops you
+      into an unoccupied region of morphospace.
+    </p>
+  </div>
+
+</div><!-- /bottom-row -->
+
+<footer>
+  Week 8 Vibe Code · HIPS 18504 · Computation, Culture &amp; Society · University of Chicago · Spring 2026
+</footer>
+
+<!-- ======================================================= SCRIPT -->
+<script>
+// ============================================================
+// RAUP'S MORPHOSPACE — Shell Geometry Visualizer
+// Based on: Raup (1966), Journal of Paleontology 40(5): 1178–1190
+//
+// Three parameters define ALL coiled shells:
+//   W  — whorl expansion rate:  r(θ) = W^(θ / 2π)
+//   D  — umbilical ratio:       inner edge = D × outer edge
+//   T  — translation rate:      motion along coiling axis
+// ============================================================
+
+const shellCanvas  = document.getElementById('shellCanvas');
+const shellCtx     = shellCanvas.getContext('2d');
+const morphoCanvas = document.getElementById('morphoMap');
+const morphoCtx    = morphoCanvas.getContext('2d');
+
+// Live parameter state
+const P = { W: 3.0, D: 0.30, T: 0.0 };
+const N_WHORLS = 4;    // fixed number of whorls displayed
+const STEPS    = 900;  // path resolution (higher = smoother spiral)
+
+// ============================================================
+// SHELL DRAWING
+// Strategy: build a closed polygon from the OUTER logarithmic
+// spiral (θ: 0 → N_WHORLS×2π) concatenated with the INNER
+// spiral (θ: N_WHORLS×2π → 0, radius scaled by D). Fill it.
+// ============================================================
+
+function drawShell() {
+  const ctx   = shellCtx;
+  const W     = P.W, D = P.D, T = P.T;
+  const cw    = shellCanvas.width;
+  const ch    = shellCanvas.height;
+
+  ctx.clearRect(0, 0, cw, ch);
+
+  // --- Background ---
+  ctx.fillStyle = '#07040200';
+  ctx.fillRect(0, 0, cw, ch);
+
+  // Warm radial glow at center
+  const bgGlow = ctx.createRadialGradient(cw/2, ch/2, 0, cw/2, ch/2, cw*0.55);
+  bgGlow.addColorStop(0, 'rgba(197,150,58,0.05)');
+  bgGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = bgGlow;
+  ctx.fillRect(0, 0, cw, ch);
+
+  // --- Coordinate helpers ---
+  // T compresses the y-axis to simulate foreshortening of a 3D helicospiral.
+  // In Raup's model T=0 → flat ammonite; T>0 → gastropod spire viewed from side.
+  const aspect   = 1 - T * 0.58;     // y-compression
+  const centerY  = ch/2 + T * ch * 0.11; // shift center down as spire grows up
+
+  // Scale so the outermost whorl edge fits in ~84% of the half-canvas
+  const maxR     = Math.pow(W, N_WHORLS);
+  const scale    = (cw * 0.42) / maxR;
+
+  function pt(r, theta) {
+    return [
+      cw/2 + r * Math.cos(theta) * scale,
+      centerY - r * Math.sin(theta) * aspect * scale
+    ];
+  }
+
+  const thetaMax = N_WHORLS * 2 * Math.PI;
+
+  // Build path arrays
+  const outerPts = [];
+  const innerPts = [];
+
+  for (let i = 0; i <= STEPS; i++) {
+    const theta = (i / STEPS) * thetaMax;
+    const r     = Math.pow(W, theta / (2 * Math.PI));
+    outerPts.push(pt(r, theta));
+  }
+
+  for (let i = STEPS; i >= 0; i--) {
+    const theta = (i / STEPS) * thetaMax;
+    const r     = D * Math.pow(W, theta / (2 * Math.PI));
+    innerPts.push(pt(r, theta));
+  }
+
+  // --- Determine if we're in the void (for color shift) ---
+  const inVoid = !getOrganismRegion(W, D);
+
+  // --- Shell fill gradient ---
+  // Void shells get a cooler, bluer tint; known shells are warm amber/ivory
+  const lightCol  = inVoid ? '#d0dce8' : '#f2e5cc';
+  const midCol    = inVoid ? '#8090a8' : '#c8a068';
+  const darkCol   = inVoid ? '#304050' : '#7a4a28';
+  const deepCol   = inVoid ? '#1a2530' : '#452a18';
+
+  const shellGrad = ctx.createRadialGradient(
+    cw/2 - scale * maxR * 0.12,
+    centerY - scale * maxR * 0.08,
+    scale * 0.5,
+    cw/2, centerY,
+    scale * maxR * 1.15
+  );
+  shellGrad.addColorStop(0.00, lightCol);
+  shellGrad.addColorStop(0.18, midCol);
+  shellGrad.addColorStop(0.50, darkCol);
+  shellGrad.addColorStop(1.00, deepCol);
+
+  // --- Draw filled shell tube ---
+  ctx.beginPath();
+  ctx.moveTo(outerPts[0][0], outerPts[0][1]);
+  for (const [x, y] of outerPts) ctx.lineTo(x, y);
+  for (const [x, y] of innerPts) ctx.lineTo(x, y);
+  ctx.closePath();
+  ctx.fillStyle = shellGrad;
+  ctx.fill();
+
+  // --- Inner shadow for depth ---
+  const shadow = ctx.createRadialGradient(cw/2, centerY, scale*0.3, cw/2, centerY, scale*maxR);
+  shadow.addColorStop(0,   'rgba(0,0,0,0.40)');
+  shadow.addColorStop(0.4, 'rgba(0,0,0,0)');
+  shadow.addColorStop(1,   'rgba(0,0,0,0.28)');
+  ctx.beginPath();
+  ctx.moveTo(outerPts[0][0], outerPts[0][1]);
+  for (const [x, y] of outerPts) ctx.lineTo(x, y);
+  for (const [x, y] of innerPts) ctx.lineTo(x, y);
+  ctx.closePath();
+  ctx.fillStyle = shadow;
+  ctx.fill();
+
+  // --- Outer edge stroke ---
+  ctx.beginPath();
+  ctx.moveTo(outerPts[0][0], outerPts[0][1]);
+  for (const [x, y] of outerPts) ctx.lineTo(x, y);
+  ctx.strokeStyle = inVoid ? 'rgba(60,80,100,0.85)' : 'rgba(80,50,20,0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // --- Inner edge stroke ---
+  ctx.beginPath();
+  ctx.moveTo(innerPts[0][0], innerPts[0][1]);
+  for (const [x, y] of innerPts) ctx.lineTo(x, y);
+  ctx.strokeStyle = inVoid ? 'rgba(60,80,100,0.5)' : 'rgba(80,50,20,0.5)';
+  ctx.lineWidth = 0.9;
+  ctx.stroke();
+
+  // --- Suture lines at each whorl boundary ---
+  for (let w = 1; w < N_WHORLS; w++) {
+    const theta_b = w * 2 * Math.PI;
+    const rOuter  = Math.pow(W, w);
+    const rInner  = D * Math.pow(W, w);
+    const [x1, y1] = pt(rInner, theta_b);
+    const [x2, y2] = pt(rOuter, theta_b);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = inVoid ? 'rgba(80,110,140,0.4)' : 'rgba(60,38,14,0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // --- Aperture dot (mouth of the shell, at θ=0) ---
+  const [ax, ay] = pt(1.0, 0);
+  ctx.beginPath();
+  ctx.arc(ax, ay, 4.5, 0, Math.PI * 2);
+  ctx.fillStyle = inVoid ? 'rgba(120,180,220,0.85)' : 'rgba(197,150,58,0.85)';
+  ctx.fill();
+
+  // --- Umbilicus hint ring if D > 0.08 ---
+  if (D > 0.08) {
+    ctx.beginPath();
+    ctx.arc(cw/2, centerY, D * scale * 0.6, 0, Math.PI * 2);
+    ctx.strokeStyle = inVoid ? 'rgba(80,120,160,0.2)' : 'rgba(197,150,58,0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // --- Update label ---
+  document.getElementById('canvasLabel').textContent =
+    `W = ${W.toFixed(2)}  ·  D = ${D.toFixed(2)}  ·  T = ${T.toFixed(2)}  ·  ${N_WHORLS} whorls`;
+}
+
+// ============================================================
+// MORPHOSPACE MINIMAP
+// Scatter-map of W (x) vs D (y) with approximate organism
+// regions adapted from Raup (1966) text-figure 4.
+// ============================================================
+
+// Approximate organism zones from Raup's figure 4
+// Fields: wMin, wMax, dMin, dMax, label, fill color
+const REGIONS = [
+  { name:'ammonite',   label:'Ammonoids',   color:'rgba(110,180,110,0.32)', stroke:'rgba(110,180,110,0.65)',
+    wMin:1.4, wMax:4.6, dMin:0.10, dMax:0.72 },
+  { name:'gastropod',  label:'Gastropods',  color:'rgba(90,130,220,0.32)',  stroke:'rgba(90,130,220,0.65)',
+    wMin:2.0, wMax:6.2, dMin:0.00, dMax:0.32 },
+  { name:'bivalve',    label:'Bivalves',    color:'rgba(210,155,70,0.32)',  stroke:'rgba(210,155,70,0.65)',
+    wMin:2.5, wMax:9.5, dMin:0.12, dMax:0.62 },
+  { name:'brachiopod', label:'Brachiopods', color:'rgba(200,95,195,0.32)',  stroke:'rgba(200,95,195,0.65)',
+    wMin:2.0, wMax:4.2, dMin:0.28, dMax:0.82 },
+];
+
+function getOrganismRegion(W, D) {
+  for (const r of REGIONS) {
+    if (W >= r.wMin && W <= r.wMax && D >= r.dMin && D <= r.dMax) return r;
+  }
+  return null;
+}
+
+function mapCoords(W_val, D_val) {
+  // Map W ∈ [1,10] → x, D ∈ [0,1] → y (0 at bottom)
+  const mw = morphoCanvas.width, mh = morphoCanvas.height;
+  const pad = 30;
+  const x = pad + ((W_val - 1) / 9) * (mw - 2*pad);
+  const y = mh - pad - D_val * (mh - 2*pad);
+  return [x, y];
+}
+
+function drawMorphoMap() {
+  const ctx = morphoCtx;
+  const mw  = morphoCanvas.width;
+  const mh  = morphoCanvas.height;
+  const pad = 30;
+
+  ctx.clearRect(0, 0, mw, mh);
+
+  // Dark background
+  ctx.fillStyle = '#070402';
+  ctx.fillRect(0, 0, mw, mh);
+
+  // Void background tint
+  ctx.fillStyle = 'rgba(100,80,50,0.07)';
+  ctx.fillRect(pad, pad, mw - 2*pad, mh - 2*pad);
+
+  // Draw organism region ellipses
+  for (const region of REGIONS) {
+    const [x1, y1] = mapCoords(region.wMin, region.dMax);
+    const [x2, y2] = mapCoords(region.wMax, region.dMin);
+    const rx  = Math.abs(x2 - x1) / 2;
+    const ry  = Math.abs(y1 - y2) / 2;
+    const ecx = (x1 + x2) / 2;
+    const ecy = (y1 + y2) / 2;
+
+    ctx.beginPath();
+    ctx.ellipse(ecx, ecy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle   = region.color;
+    ctx.strokeStyle = region.stroke;
+    ctx.lineWidth   = 0.8;
+    ctx.fill();
+    ctx.stroke();
+
+    // Small label
+    ctx.font      = '8.5px Crimson Pro, Georgia, serif';
+    ctx.fillStyle = 'rgba(237,224,196,0.75)';
+    ctx.textAlign = 'center';
+    ctx.fillText(region.label, ecx, ecy + 3);
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(58,44,24,0.9)';
+  ctx.lineWidth   = 1;
+  ctx.beginPath(); ctx.moveTo(pad, mh-pad); ctx.lineTo(mw-pad, mh-pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, pad);    ctx.lineTo(pad, mh-pad);    ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(150,134,106,0.8)';
+  ctx.font      = '8.5px Crimson Pro, Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('W  (whorl expansion rate)', mw/2, mh - 4);
+
+  ctx.save();
+  ctx.translate(10, mh/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('D  (umbilical ratio)', 0, 0);
+  ctx.restore();
+
+  // Tick labels on W axis
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(150,134,106,0.7)';
+  for (const wv of [1, 3, 5, 7, 10]) {
+    const [x] = mapCoords(wv, 0);
+    ctx.fillText(wv, x, mh - pad + 10);
+    ctx.beginPath();
+    ctx.moveTo(x, mh-pad); ctx.lineTo(x, mh-pad+3);
+    ctx.strokeStyle = 'rgba(58,44,24,0.7)'; ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  // Tick labels on D axis
+  ctx.textAlign = 'right';
+  for (const dv of [0, 0.5, 1.0]) {
+    const [, y] = mapCoords(1, dv);
+    ctx.fillText(dv.toFixed(1), pad-4, y+3);
+  }
+
+  // Current-position dot (glowing gold)
+  const [dotX, dotY] = mapCoords(P.W, P.D);
+
+  const glow = ctx.createRadialGradient(dotX, dotY, 0, dotX, dotY, 16);
+  glow.addColorStop(0, 'rgba(197,150,58,0.55)');
+  glow.addColorStop(1, 'rgba(197,150,58,0)');
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, 16, 0, Math.PI*2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, 5.5, 0, Math.PI*2);
+  ctx.fillStyle   = '#c5963a';
+  ctx.strokeStyle = '#f5e8c0';
+  ctx.lineWidth   = 1.2;
+  ctx.fill();
+  ctx.stroke();
+}
+
+// ============================================================
+// ORGANISM BADGE
+// ============================================================
+
+const ORGANISM_INFO = {
+  ammonite:   { name:'Ammonoid',    desc:'Tightly coiled, Paleozoic–Mesozoic seas; chambered shell for buoyancy.' },
+  gastropod:  { name:'Gastropod',   desc:'Helicospiral snail form; high T, low D — often approaching the axis.' },
+  bivalve:    { name:'Bivalve',     desc:'Rapidly expanding coil; clam and oyster geometry, high W.' },
+  brachiopod: { name:'Brachiopod',  desc:'Planispiral, broad umbilicus; Paleozoic filter-feeders on the seafloor.' },
+};
+
+function updateBadge() {
+  const badge  = document.getElementById('badge');
+  const region = getOrganismRegion(P.W, P.D);
+
+  if (region && ORGANISM_INFO[region.name]) {
+    const info = ORGANISM_INFO[region.name];
+    badge.className = 'badge found';
+    badge.innerHTML =
+      `<span class="org-name">${info.name}</span>` +
+      `<em>${info.desc}</em>`;
+  } else {
+    badge.className = 'badge void';
+    badge.innerHTML = `<em>You are in the void — a shell that evolution never made.</em>`;
+  }
+}
+
+// ============================================================
+// PRESETS
+// Approximate canonical parameter values from Raup (1966)
+// ============================================================
+
+const PRESETS = {
+  ammonite:   { W: 2.4,  D: 0.42, T: 0.00 },
+  gastropod:  { W: 3.6,  D: 0.05, T: 0.62 },
+  bivalve:    { W: 7.6,  D: 0.35, T: 0.00 },
+  brachiopod: { W: 2.9,  D: 0.62, T: 0.00 },
+};
+
+// Void regions: geometrically valid but biologically unoccupied
+const VOID_POOL = [
+  { W: 1.13, D: 0.88, T: 0.1 },   // impossibly tight, very hollow
+  { W: 1.20, D: 0.04, T: 0.7 },   // very tight coil, nearly solid, tall
+  { W: 8.50, D: 0.80, T: 0.1 },   // wildly expanding AND hollow
+  { W: 9.20, D: 0.05, T: 0.0 },   // extreme expansion, near-solid
+  { W: 1.18, D: 0.50, T: 0.9 },   // barely expanding, mid-hollow, extreme height
+  { W: 5.50, D: 0.88, T: 0.4 },   // mid expansion, nearly hollow tube
+];
+
+function setPreset(name) {
+  let p;
+  if (name === 'void') {
+    const v = VOID_POOL[Math.floor(Math.random() * VOID_POOL.length)];
+    // Add small random jitter so it's different each click
+    p = {
+      W: Math.min(10, Math.max(1.1, v.W + (Math.random()-0.5)*0.15)),
+      D: Math.min(0.95, Math.max(0.01, v.D + (Math.random()-0.5)*0.05)),
+      T: Math.min(1.0,  Math.max(0.0,  v.T + (Math.random()-0.5)*0.08)),
+    };
+  } else {
+    p = PRESETS[name];
+  }
+
+  P.W = p.W; P.D = p.D; P.T = p.T;
+
+  // Sync sliders & displays
+  document.getElementById('wSlider').value = p.W;
+  document.getElementById('dSlider').value = p.D;
+  document.getElementById('tSlider').value = p.T;
+  document.getElementById('wVal').textContent = p.W.toFixed(2);
+  document.getElementById('dVal').textContent = p.D.toFixed(2);
+  document.getElementById('tVal').textContent = p.T.toFixed(2);
+
+  redraw();
+}
+
+// ============================================================
+// SLIDER BINDINGS
+// ============================================================
+
+function bindSlider(sliderId, displayId, key, decimals) {
+  document.getElementById(sliderId).addEventListener('input', function () {
+    P[key] = parseFloat(this.value);
+    document.getElementById(displayId).textContent = P[key].toFixed(decimals);
+    redraw();
+  });
+}
+
+bindSlider('wSlider', 'wVal', 'W', 2);
+bindSlider('dSlider', 'dVal', 'D', 2);
+bindSlider('tSlider', 'tVal', 'T', 2);
+
+// ============================================================
+// REDRAW — calls all three drawing functions
+// ============================================================
+
+function redraw() {
+  drawShell();
+  drawMorphoMap();
+  updateBadge();
+}
+
+// Initial render on page load
+redraw();
+</script>
+
+</body>
+</html>
