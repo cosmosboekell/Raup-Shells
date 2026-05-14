@@ -1,7 +1,7 @@
 # Raup's Morphospace — The Shells That Were Never Born
 
 **Week 8 Vibe Code**  
-HIST 17514 / HIPS 18504 / SOC 20526: Computation, Culture & Society  
+HIPS 18504: Computation, Culture & Society  
 University of Chicago · Spring 2026
 
 ---
@@ -95,4 +95,4 @@ python3 -m http.server 8080
 
 ---
 
-*Built for CCS 2026. Single-file HTML/CSS/JS. No frameworks.*
+*Built for CCS Spring 2026. Single-file HTML/CSS/JS. No frameworks.*
