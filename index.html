@@ -420,8 +420,7 @@
 </div><!-- /bottom-row -->
 
 <footer>
-  Week 8 Vibe Code · HIST 17514 / HIPS 18504 / SOC 20526 ·
-  Computation, Culture &amp; Society · University of Chicago · 2026
+  Week 8 Vibe Code · HIPS 18504 · Computation, Culture &amp; Society · University of Chicago · Spring 2026
 </footer>
 
 <!-- ======================================================= SCRIPT -->
@@ -658,8 +657,8 @@ function drawMorphoMap() {
   for (const region of REGIONS) {
     const [x1, y1] = mapCoords(region.wMin, region.dMax);
     const [x2, y2] = mapCoords(region.wMax, region.dMin);
-    const rx  = (x2 - x1) / 2;
-    const ry  = (y1 - y2) / 2;
+    const rx  = Math.abs(x2 - x1) / 2;
+    const ry  = Math.abs(y1 - y2) / 2;
     const ecx = (x1 + x2) / 2;
     const ecy = (y1 + y2) / 2;
 
